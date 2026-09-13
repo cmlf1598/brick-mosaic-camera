@@ -1,0 +1,18 @@
+{
+  "name": "brick-mosaic-camera",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "bake": "node tools/bake-stud-lut.mjs",
+    "verify": "node tools/verify-lut.mjs"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  }
+}
