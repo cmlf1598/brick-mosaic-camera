@@ -14,7 +14,7 @@ export const config = {
    * Edge length of one brick in CSS pixels. The grid is derived from this so
    * cells stay square at any canvas aspect. The reference mosaic used 30.
    */
-  cellSize: num("cell", 26),
+  cellSize: num("cell", 18),
   minCellSize: 8,
   maxCellSize: 96,
 
