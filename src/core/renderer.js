@@ -14,17 +14,35 @@ import * as THREE from "three";
  * tagged NoColorSpace. Do NOT port the ACESFilmicToneMapping + SRGBColorSpace
  * setup from the sibling night-city-digital-clock project — it is right for a
  * lit 3D scene and wrong for a 2D image filter.
+ *
+ * The 3D view is the one exception, and it is exactly that lit scene. It is
+ * safe to switch encoding for it because there every image-filter pass renders
+ * into a render target, which ignores outputColorSpace; only the lit slate
+ * reaches the canvas. setOutputMode() is the only place that switches it.
  */
 export function createRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: false, // nothing to antialias: the output is a fullscreen quad
+    // The 2D fullscreen quad has nothing to antialias, but the tilted slate
+    // and its stud silhouettes in 3D shimmer badly without MSAA.
+    antialias: true,
     alpha: false,
   });
 
-  renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // i.e. no conversion
-  renderer.toneMapping = THREE.NoToneMapping;
+  // Fills the letterbox around the square 2D grid. Given as raw values in the
+  // "linear" space because the 2D path writes them out unconverted, so they
+  // land on screen as exactly the page background, #11131a.
+  renderer.setClearColor(
+    new THREE.Color().setRGB(0x11 / 255, 0x13 / 255, 0x1a / 255, THREE.LinearSRGBColorSpace),
+  );
+  setOutputMode(renderer, "2d");
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   return renderer;
+}
+
+export function setOutputMode(renderer, view) {
+  renderer.outputColorSpace =
+    view === "3d" ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace; // linear = no conversion
+  renderer.toneMapping = THREE.NoToneMapping;
 }

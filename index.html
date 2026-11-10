@@ -7,6 +7,17 @@
   </head>
   <body>
     <canvas id="canvas"></canvas>
+    <div id="controls" hidden>
+      <label class="panel" id="cell-size">
+        <span>Brick</span>
+        <input type="range" step="1" />
+        <output></output>
+      </label>
+      <div class="panel" id="view-toggle" role="group" aria-label="View">
+        <button type="button" data-view="2d" aria-pressed="true">2D</button>
+        <button type="button" data-view="3d" aria-pressed="false">3D</button>
+      </div>
+    </div>
     <div id="overlay" hidden></div>
     <script type="module" src="/src/main.js"></script>
   </body>

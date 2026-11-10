@@ -1,45 +1,11 @@
 /**
- * The mosaic composite — the core of the effect.
- *
- * Every cell gets the same grayscale brick tile composited over its flat colour
- * with an *overlay* blend. Both halves of that were measured from
- * reference_images/new_yorker.png rather than guessed:
- *
- *   - Fitting blend modes across all 1200 reference cells gives RMS error
- *     (x255): overlay 0.3, soft-light 14.1, linear 14.5, screen 20.4,
- *     multiply 44.7. Overlay is not a close call — it is the only candidate
- *     that compresses the relief at both the dark and the bright end.
- *   - Inverting that blend recovers a tile whose flat plate area sits at
- *     exactly 0.500, overlay's neutral value, so the plate passes brick colour
- *     through untouched and only the stud and bevel shade it.
- *
- * Reconstructing the reference through this path lands at 0.27/255 mean abs
- * error, 0.50/255 max. tools/verify-lut.mjs asserts it on every run.
- *
- * The blend must happen on sRGB-encoded values — that is the space it was
- * fitted in. See core/renderer.js for why nothing in the pipeline converts.
+ * Brick colour selection, shared by the 2D mosaic and the 3D cell-colour pass
+ * so both views pick exactly the same brick for a given cell.
  */
-export const MOSAIC_FRAG = /* glsl */ `
-  precision highp float;
-
-  uniform sampler2D uCells;     // one texel per brick
-  uniform sampler2D uStud;      // baked brick tile, grayscale
+export const PALETTE_GLSL = /* glsl */ `
   uniform sampler2D uPalette;   // Nx1 LEGO colours
-  uniform vec2 uGrid;
-  uniform int uPaletteMode;     // 0 = sampled colour, 1 = nearest LEGO colour
   uniform int uPaletteCount;
   uniform float uDither;
-
-  in vec2 vUv;
-  out vec4 fragColor;
-
-  // ---- overlay -------------------------------------------------------------
-
-  // Per-channel overlay. step() rather than a branch: the channels genuinely
-  // take different sides and this is the whole inner loop.
-  vec3 overlay(vec3 b, vec3 s) {
-    return mix(2.0 * b * s, 1.0 - 2.0 * (1.0 - b) * (1.0 - s), step(0.5, b));
-  }
 
   // ---- Oklab ---------------------------------------------------------------
 
@@ -111,6 +77,49 @@ export const MOSAIC_FRAG = /* glsl */ `
     }
 
     return best;
+  }
+`;
+
+/**
+ * The mosaic composite — the core of the effect.
+ *
+ * Every cell gets the same grayscale brick tile composited over its flat colour
+ * with an *overlay* blend. Both halves of that were measured from
+ * reference_images/new_yorker.png rather than guessed:
+ *
+ *   - Fitting blend modes across all 1200 reference cells gives RMS error
+ *     (x255): overlay 0.3, soft-light 14.1, linear 14.5, screen 20.4,
+ *     multiply 44.7. Overlay is not a close call — it is the only candidate
+ *     that compresses the relief at both the dark and the bright end.
+ *   - Inverting that blend recovers a tile whose flat plate area sits at
+ *     exactly 0.500, overlay's neutral value, so the plate passes brick colour
+ *     through untouched and only the stud and bevel shade it.
+ *
+ * Reconstructing the reference through this path lands at 0.27/255 mean abs
+ * error, 0.50/255 max. tools/verify-lut.mjs asserts it on every run.
+ *
+ * The blend must happen on sRGB-encoded values — that is the space it was
+ * fitted in. See core/renderer.js for why nothing in the pipeline converts.
+ */
+export const MOSAIC_FRAG = /* glsl */ `
+  precision highp float;
+
+  uniform sampler2D uCells;     // one texel per brick
+  uniform sampler2D uStud;      // baked brick tile, grayscale
+  uniform vec2 uGrid;
+  uniform int uPaletteMode;     // 0 = sampled colour, 1 = nearest LEGO colour
+
+  in vec2 vUv;
+  out vec4 fragColor;
+
+  ${PALETTE_GLSL}
+
+  // ---- overlay -------------------------------------------------------------
+
+  // Per-channel overlay. step() rather than a branch: the channels genuinely
+  // take different sides and this is the whole inner loop.
+  vec3 overlay(vec3 b, vec3 s) {
+    return mix(2.0 * b * s, 1.0 - 2.0 * (1.0 - b) * (1.0 - s), step(0.5, b));
   }
 
   // ---- main ----------------------------------------------------------------

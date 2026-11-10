@@ -11,8 +11,9 @@ const num = (key, fallback) => {
 
 export const config = {
   /**
-   * Edge length of one brick in CSS pixels. The grid is derived from this so
-   * cells stay square at any canvas aspect. The reference mosaic used 30.
+   * Edge length of one brick in CSS pixels. The grid is always N x N bricks,
+   * N derived from this and the shorter window side; the longer side is
+   * letterboxed. The reference mosaic used 30.
    */
   cellSize: num("cell", 18),
   minCellSize: 8,
@@ -45,13 +46,39 @@ export const config = {
    */
   mirror: params.has("mirror") ? params.get("mirror") === "1" : !params.get("src"),
 
-  /** Shows the HUD and enables the keyboard controls. */
+  /** Shows the HUD: source, grid, palette and the keyboard shortcuts. */
   debug: params.has("debug"),
 
   camera: { width: 1280, height: 720 },
+
+  /** "2d" = flat mosaic, "3d" = floating slate of real bricks. `?view=3d` */
+  view: params.get("view") === "3d" ? "3d" : "2d",
+
+  view3d: {
+    /** Tilt toward the pointer at the edge of the window, in radians. */
+    maxTilt: (8 * Math.PI) / 180,
+    /** Exponential ease rate toward the pointer tilt, per second. */
+    tiltEase: 4,
+    /** Idle bob, as a fraction of the slate height, and its speed in rad/s. */
+    bobAmplitude: 0.012,
+    bobSpeed: 0.9,
+    /**
+     * Brick budget for the 3D view. Every brick is real geometry, so tiny
+     * bricks on a big window would mean tens of thousands of them; past this
+     * the 3D grid uses larger bricks than the 2D one. The 2D view is unaffected.
+     */
+    maxBricks: 15000,
+    /** Studs shadowing their neighbours. The single most expensive 3D option. */
+    shadows: true,
+    /** Raised lettering on each stud top, as in the 2D tile. "" turns it off. */
+    studText: "LEGO",
+    /** Bump strength of that lettering. */
+    studTextDepth: 0.7,
+  },
 };
 
 export const KEYS = `
+  V       toggle 2D / 3D
   P       toggle palette quantisation
   [ / ]   brick size
   M       mirror
